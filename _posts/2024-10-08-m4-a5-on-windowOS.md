@@ -1,3 +1,11 @@
+---
+layout: single
+title: "Retrieving CounterFactuals"
+categories: XAI
+sidebar: true
+use_math: true
+---
+
 # 문제: bank 데이터를 이용하여 CFP를 구한다. 
 
 프로그램 시작 시 tf.compat.v1.disable_v2_behavior() 함수를 가장 먼저 실행하여 alibi explainer가 작동할 수 있도록 한다.
@@ -29,19 +37,6 @@ df.head()
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -181,19 +176,6 @@ df.describe()
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -376,19 +358,7 @@ df.head()
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
 
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -820,10 +790,6 @@ print(f'F1 Score: {f1:.4f}')
     F1 Score: 0.8998
 
 
-    c:\Users\Jakob\miniconda3\envs\xai39\lib\site-packages\keras\engine\training_v1.py:2045: UserWarning: `Model.state_updates` will be removed in a future version. This property should not be used in TensorFlow 2.0, as `updates` are applied automatically.
-      updates = self.state_updates
-    c:\Users\Jakob\miniconda3\envs\xai39\lib\site-packages\keras\engine\training_v1.py:2067: UserWarning: `Model.state_updates` will be removed in a future version. This property should not be used in TensorFlow 2.0, as `updates` are applied automatically.
-      updates=self.state_updates,
 
 
 
@@ -868,8 +834,7 @@ ae.save('ae_bank.h5', save_format='h5')
 enc.save('enc_bank.h5', save_format='h5')
 ```
 
-    c:\Users\Jakob\miniconda3\envs\xai39\lib\site-packages\keras\engine\training_v1.py:2045: UserWarning: `Model.state_updates` will be removed in a future version. This property should not be used in TensorFlow 2.0, as `updates` are applied automatically.
-      updates = self.state_updates
+
 
 
 ## 5. CFP 구하기
@@ -917,8 +882,6 @@ cf = CounterfactualProto(model, shape, beta=beta,
 cf.fit(X_train, d_type='abdm')
 ```
 
-    c:\Users\Jakob\miniconda3\envs\xai39\lib\site-packages\keras\engine\training_v1.py:2067: UserWarning: `Model.state_updates` will be removed in a future version. This property should not be used in TensorFlow 2.0, as `updates` are applied automatically.
-      updates=self.state_updates,
 
 
 
@@ -1157,6 +1120,3 @@ describe_instance(X, explanation)
 
 
 
-```python
-
-```
