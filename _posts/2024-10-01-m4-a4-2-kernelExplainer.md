@@ -353,7 +353,7 @@ shap.force_plot(expected_k, shap_values_k[0, :], features=X_test.iloc[0])
 
 
 
-![png](/images/m4/a4_2_kernelExplainer/kernel_g.png)
+![png](/images/m4/a4_2_kernelExplainer/kenel_g.png)
     
 
 
@@ -397,6 +397,6 @@ shap.force_plot(expected_k, shap_values_k, features = X_test, feature_names=feat
 
 
 
-![png](/images/m4/a4_2_kernelExplainer/kernel_l.png)
+![png](/images/m4/a4_2_kernelExplainer/kenel_l.png)
     
 출력 결과의 dropdown box에서 가로축은 DIS, 세로축은 DIS effects를 클릭하였다. 세로축에서 주택가격 예측치의 기댓값이 23.02임을 확인할 수 있다. 한편 DIS가 약 3.7일 때를 기준으로 이보다 작으면(즉 업무지구와 거리가 가까우면) 주택가격 예측치에 긍정적(+) 영향을 주고, 이보다 크면(업무지구와 거리가 멀면) 부정적(-) 영향을 주는 것을 볼 수 있다. 
