@@ -303,7 +303,7 @@ shap.summary_plot(shap_values_deep, features=X_test, feature_names=feature_names
 
 
     
-![png](/images/m4/a4_2/output_17_0.png)
+![png](/images/m4/a4_2_deepGradientExplainer/output_17_0.png)
     
 
 
@@ -328,7 +328,7 @@ shap.force_plot(expected_deep[0], shap_values_deep[idx], features=X_test.iloc[0,
 
 
 
-![png](/images/m4/a4_2/deep_2_2.png)
+![png](/images/m4/a4_2_deepGradientExplainer/deep_2_2.png)
 
 
 
@@ -379,6 +379,6 @@ shap.force_plot(expected_ge, shap_values_ge[idx], features=X_test.iloc[0, :])
 
 
 
-![png](/images/m4/a4_2/deep_3.png)
+![png](/images/m4/a4_2_deepGradientExplainer/deep_3.png)
 
 
