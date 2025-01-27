@@ -1,3 +1,11 @@
+---
+layout: single
+title: "Conventional Diff-in-Diff"
+categories: Causal Inference
+sidebar: true
+use_math: true
+---
+
 ```python
 import pandas as pd
 import matplotlib.pyplot as plt 
