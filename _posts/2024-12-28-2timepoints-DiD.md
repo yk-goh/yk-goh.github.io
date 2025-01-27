@@ -83,10 +83,43 @@ df_cnt_binary = df_cnt_binary.set_index(['join_sn', 'ym'])
 df_cnt_binary = (df_cnt_binary > 0).astype(int).reset_index()
 df_cnt_binary.head(2)
 ```
-|   | join_sn | ym | i_cnt_all | ... | life | disease | saving | fire | 
-|---|---------|----|-----------|-----|------|---------|--------|------|
-| 0 | 101 | 201803 | 1 | ... | 1 | 1 | 0 | 0|
-| 1 | 101 | 201806 | 1 | ... | 1 | 1 | 0 | 0|
+<table border="1">
+  <thead>
+    <tr>
+      <th>join_sn</th>
+      <th>ym</th>
+      <th>i_cnt_all</th>
+      <th>...</th>
+      <th>life</th>
+      <th>disease</th>
+      <th>saving</th>
+      <th>fire</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>101</td>
+      <td>201803</td>
+      <td>1</td>
+      <td>...</td>
+      <td>1</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>101</td>
+      <td>201806</td>
+      <td>1</td>
+      <td>...</td>
+      <td>1</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+
 
 ```python
 df_cnt_binary.isna().sum()
@@ -163,10 +196,43 @@ df_cnt_binary_filtered = df_cnt_binary[(df_cnt_binary['ym']==201912) | (df_cnt_b
 
 df_cnt_filtered.head(2)
 ```
-|   | join_sn | ym | i_cnt_all | ... | life | disease | saving | fire | 
-|---|---------|----|-----------|-----|------|---------|--------|------|
-| 7 | 101 | 201912 | 6 | ... | 1 | 2 | 0 | 0|
-| 15 | 101 | 202112 | 7 | ... | 1 | 3 | 0 | 0|
+<table border="1">
+  <thead>
+    <tr>
+      <th>join_sn</th>
+      <th>ym</th>
+      <th>i_cnt_all</th>
+      <th>...</th>
+      <th>life</th>
+      <th>disease</th>
+      <th>saving</th>
+      <th>fire</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>101</td>
+      <td>201912</td>
+      <td>6</td>
+      <td>...</td>
+      <td>1</td>
+      <td>2</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>101</td>
+      <td>202112</td>
+      <td>7</td>
+      <td>...</td>
+      <td>1</td>
+      <td>3</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+
 
 신용 테이블에 보험 보유여부와 보유개수 테이블을 머지한다. 패널데이터이므로 단위(차주번호)와 시점을 모두 key로 사용해야 한다. 
 ```python
