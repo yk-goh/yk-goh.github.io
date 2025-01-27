@@ -75,6 +75,10 @@ df_cnt_binary = df_cnt_binary.set_index(['join_sn', 'ym'])
 df_cnt_binary = (df_cnt_binary > 0).astype(int).reset_index()
 df_cnt_binary.head(2)
 ```
+|   | join_sn | ym | i_cnt_all | ... | life | disease | saving | fire | 
+|---|---------|----|-----------|-----|------|---------|--------|------|
+| 0 | 101 | 201803 | 1 | ... | 1 | 1 | 0 | 0|
+| 1 | 101 | 201806 | 1 | ... | 1 | 1 | 0 | 0|
 
 ```python
 df_cnt_binary.isna().sum()
@@ -120,6 +124,7 @@ df_cnt_binary.shape
 (53373350, 28)
 ```
 
+컬럼명을 재설정한다. i_cnt_\*가 보유개수를 의미한다면 보유여부를 나타내는 컬럼은 i_has_\*이다.
 ```python
 colnames = ['join_sn', 'ym', 'i_has_all', 'i_has_whole', 'i_has_term',
        'i_has_disease', 'i_has_health', 'i_has_cancer', 'i_has_nursing',
@@ -150,6 +155,10 @@ df_cnt_binary_filtered = df_cnt_binary[(df_cnt_binary['ym']==201912) | (df_cnt_b
 
 df_cnt_filtered.head(2)
 ```
+|   | join_sn | ym | i_cnt_all | ... | life | disease | saving | fire | 
+|---|---------|----|-----------|-----|------|---------|--------|------|
+| 7 | 101 | 201912 | 6 | ... | 1 | 2 | 0 | 0|
+| 15 | 101 | 202112 | 7 | ... | 1 | 3 | 0 | 0|
 
 신용 테이블에 보험 보유여부와 보유개수 테이블을 머지한다. 패널데이터이므로 단위(차주번호)와 시점을 모두 key로 사용해야 한다. 
 ```python
@@ -304,7 +313,7 @@ for col in has_columns:
 results_df = pd.DataFrame(results)
 results_df.transpose()
 ```
-
+![2시점 이중차분법-보유여부](/images/capstonePRJ/2timepointsDiD/2timepointsDiD_ols1.png)
 
 
 ## 3 보유개수 - OLS for DiD
@@ -346,7 +355,7 @@ for col in cnt_columns:
 results_df = pd.DataFrame(results)
 results_df.transpose()
 ```
-
+![2시점 이중차분법-보유개수](/images/capstonePRJ/2timepointsDiD/2timepointsDiD_ols2.png)
 
 ```python
 import statsmodels.formula.api as smf
