@@ -1,7 +1,7 @@
 ---
 layout: single
 title: "Conventional Diff-in-Diff"
-categories: Causal Inference
+categories: Causal_Inference
 sidebar: true
 use_math: true
 ---
