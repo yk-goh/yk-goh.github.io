@@ -1,7 +1,7 @@
 ---
 layout: single
 title: "Eventstudy plot: validating and visualizing parallel trend assumption"
-categories: Causal Inference
+categories: Causal_Inference
 sidebar: true
 use_math: true
 ---
