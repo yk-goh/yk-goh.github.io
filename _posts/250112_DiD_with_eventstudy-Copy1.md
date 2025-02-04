@@ -1,3 +1,11 @@
+---
+layout: single
+title: ""
+categories: Causal Inference
+sidebar: true
+use_math: true
+---
+
 ```python
 In [1]:
 
