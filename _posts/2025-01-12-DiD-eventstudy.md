@@ -628,9 +628,9 @@ for col in target_cols:
 15 -0.029521          11  
 ```
 
-# 이미지 자리-------------------
-![has_life_insurance](/images/)
-life
+
+![has_life_insurance](/images/capstonePRJ/2timepointsDiD_eventstudyplot/2timepoints_bin_life.png)
+
 
 
 
@@ -673,12 +673,7 @@ life
 14 -0.024593          10  
 15 -0.027258          11  
 ```
-
-
-
-# 이미지 자리-------------------
-![][]
-disease
+![has_health_insurance](/images/capstonePRJ/2timepointsDiD_eventstudyplot/2timepoints_bin_disease.png)
 
 
 
@@ -719,13 +714,7 @@ disease
 14 -0.030457          10  
 15 -0.033893          11  
 ```
-
-
-
-# 이미지 자리-------------------
-![][]
-hurt
-
+![has_hurt_insurance](/images/capstonePRJ/2timepointsDiD_eventstudyplot/2timepoints_bin_hurt.png)
 
 
 
@@ -842,12 +831,7 @@ for col in target_cols:
 14 -0.039511          10  
 15 -0.042774          11  
 ```
-
-
-# 이미지 자리-------------------
-![][]
-life insurance
-
+![count_life_insurance](/images/capstonePRJ/2timepointsDiD_eventstudyplot/2timepoints_count_life.png)
 
 
 ```
@@ -887,9 +871,7 @@ life insurance
 14 -0.049491          10  
 15 -0.059379          11  
 ```
-# 이미지 자리-------------------
-![][]
-disease insurance
+![count_disease_insurance](/images/capstonePRJ/2timepointsDiD_eventstudyplot/2timepoints_count_disease.png)
 
 
 
@@ -930,14 +912,7 @@ disease insurance
 14 -0.087657          10  
 15 -0.095363          11  
 ```
-
-
-
-# 이미지 자리-------------------
-![][]
-
-hurt insurance
-
+![count_hurt_insurance](/images/capstonePRJ/2timepointsDiD_eventstudyplot/2timepoints_count_hurt.png)
 
 
 
