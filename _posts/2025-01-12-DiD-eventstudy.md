@@ -1,3 +1,11 @@
+---
+layout: single
+title: "Eventstudy plot: validating and visualizing parallel trend assumption"
+categories: Causal Inference
+sidebar: true
+use_math: true
+---
+
 ```python
 import pandas as pd 
 import numpy as np
