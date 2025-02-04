@@ -1,7 +1,7 @@
 ---
 layout: single
 title: "Staggered DiD"
-categories: Causal Inference
+categories: Causal_Inference
 sidebar: true
 use_math: true
 ---
