@@ -626,17 +626,17 @@ for col in target_cols:
 13 -0.019187           9  
 14 -0.027325          10  
 15 -0.029521          11  
-
+```
 
 # 이미지 자리-------------------
-![][]
+![has_life_insurance](/images/)
 life
 
 
 
 
 
-
+```
    variable  coefficient  standard_error    T-value       p-value  lower_ci  \
 0     et_95     0.005121        0.001452   3.526179  4.216037e-04  0.002274   
 1     et_94     0.003525        0.001307   2.695814  7.021708e-03  0.000962   
@@ -672,7 +672,7 @@ life
 13 -0.023134           9  
 14 -0.024593          10  
 15 -0.027258          11  
-
+```
 
 
 
@@ -682,7 +682,7 @@ disease
 
 
 
-
+```
    variable  coefficient  standard_error    T-value       p-value  lower_ci  \
 0     et_95     0.004474        0.001617   2.766915  5.658962e-03  0.001305   
 1     et_94     0.001679        0.001427   1.176434  2.394215e-01 -0.001118   
@@ -718,7 +718,7 @@ disease
 13 -0.029101           9  
 14 -0.030457          10  
 15 -0.033893          11  
-
+```
 
 
 
@@ -730,7 +730,6 @@ hurt
 
 
 
-```
 
 # 3.2 보유개수의 eventstudy plot 
 ```python
@@ -807,11 +806,6 @@ for col in target_cols:
 ```
 
 ```
-
-
-
-
-
    variable  coefficient  standard_error    T-value       p-value  lower_ci  \
 0     et_95     0.011554        0.001787   6.465466  1.009921e-10  0.008052   
 1     et_94     0.008080        0.001585   5.098499  3.423645e-07  0.004974   
@@ -847,7 +841,7 @@ for col in target_cols:
 13 -0.026835           9  
 14 -0.039511          10  
 15 -0.042774          11  
-
+```
 
 
 # 이미지 자리-------------------
@@ -856,7 +850,7 @@ life insurance
 
 
 
-
+```
    variable  coefficient  standard_error    T-value       p-value  lower_ci  \
 0     et_95     0.000878        0.003593   0.244343  8.069654e-01 -0.006163   
 1     et_94     0.001179        0.003233   0.364678  7.153521e-01 -0.005158   
@@ -892,20 +886,14 @@ life insurance
 13 -0.050247           9  
 14 -0.049491          10  
 15 -0.059379          11  
-
-
-
-
-
-
-
+```
 # 이미지 자리-------------------
 ![][]
 disease insurance
 
 
 
-
+```
    variable  coefficient  standard_error    T-value       p-value  lower_ci  \
 0     et_95     0.008967        0.002697   3.325293  8.832592e-04  0.003682   
 1     et_94     0.004533        0.002396   1.891876  5.850757e-02 -0.000163   
@@ -941,7 +929,7 @@ disease insurance
 13 -0.081916           9  
 14 -0.087657          10  
 15 -0.095363          11  
-
+```
 
 
 
@@ -952,7 +940,6 @@ hurt insurance
 
 
 
-```
 
 
 
