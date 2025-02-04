@@ -1,7 +1,4 @@
 ```python
-In [1]:
-
-
 import pandas as pd 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,10 +9,8 @@ from linearmodels.panel import PanelOLS
 pd.set_option('display.max_column', None)
 ```
 
+# 1. DiD 템플릿 가져오기
 ```python
-In [3]:
-
-
 df = pd.read_csv('241228_template_did.csv', index_col=0)
 
 df.dropna(inplace=True)
@@ -34,10 +29,6 @@ df['did_credit_change'].value_counts()
 (615820, 6)
 
 
-
-
-Out[3]:
-
 did_credit_change
 high_high    571870
 high_low      43950
@@ -45,9 +36,6 @@ Name: count, dtype: int64
 ```
 
 ```python
-In [ ]:
-
-
 df_credit_pre = df[['join_sn', 'hl']]
 
 df_201812 = df_credit_pre.assign(ym=201812)
@@ -72,43 +60,121 @@ df_credit = pd.concat([df_201812, df_201903, df_201906, df_201909, df_201912, df
 print(df_credit.shape)
 df_credit.head()
 ```
+    (10468940, 3)
+  <table>
+    <thead>
+      <tr>
+        <!-- 인덱스를 표시하는 열 추가 -->
+        <th> </th>
+        <th>join_sn</th>
+        <th>hl</th>
+        <th>ym</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>0</td>
+        <td>3</td>
+        <td>0</td>
+        <td>201812</td>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>8</td>
+        <td>0</td>
+        <td>201812</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>13</td>
+        <td>0</td>
+        <td>201812</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>17</td>
+        <td>0</td>
+        <td>201812</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>21</td>
+        <td>0</td>
+        <td>201812</td>
+      </tr>
+    </tbody>
+  </table>
 
+# 2. 전처리
+## 2.1 보유여부 및 보유개수 테이블 만들기
 ```python
-In [2]:
-
-
 df_cnt_pre = pd.read_csv('../INSURANCE_CNT_CONTRACT_I_VER3.csv')
 ```
 
 ```python
-In [ ]:
-
-
 # 생명보험(종신+정기)
 df_cnt_pre['life'] = df_cnt_pre['i_cnt_whole']+df_cnt_pre['i_cnt_term']
 # 건강보험(질병+암)
 df_cnt_pre['disease'] = df_cnt_pre['i_cnt_disease'] + df_cnt_pre['i_cnt_cancer']
 # 저축성보험
 df_cnt_pre['saving'] = df_cnt_pre['i_cnt_pen_sv'] + df_cnt_pre['i_cnt_pen'] + df_cnt_pre['i_cnt_sv'] + df_cnt_pre['i_cnt_ed']
-
-df_cnt_pre.head(3)
 ```
 
 ```python
-In [ ]:
-
-
 target_cols = ['join_sn', 'ym', 'i_cnt_all','life', 'disease', 'i_cnt_health', 'saving']
 df_cnt = df_cnt_pre[target_cols]
 df_cnt.rename(columns={'i_cnt_all': 'all', 'i_cnt_health': 'hurt'}, inplace=True)
 # 보유개수 테이블
 df_cnt.head(3)
 ```
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>join_sn</th>
+      <th>ym</th>
+      <th>all</th>
+      <th>life</th>
+      <th>disease</th>
+      <th>hurt</th>
+      <th>saving</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>1</td>
+      <td>201803</td>
+      <td>7</td>
+      <td>0</td>
+      <td>1</td>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>1</td>
+      <td>201806</td>
+      <td>7</td>
+      <td>0</td>
+      <td>1</td>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>1</td>
+      <td>201809</td>
+      <td>6</td>
+      <td>0</td>
+      <td>1</td>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
 
 ```python
-In [8]:
-
-
 df_credit_cnt = df_credit.merge(df_cnt, how='left', on=['join_sn', 'ym'])
 
 print("보유개수 df_credit_cnt 테이블", df_credit_cnt.shape)
@@ -121,9 +187,6 @@ Index(['join_sn', 'hl', 'ym', 'all', 'life', 'disease', 'hurt', 'saving'], dtype
 ```
 
 ```python
-In [10]:
-
-
 # 대출은 있으나 보험이 하나도 없는 차주-시점은 보험보유 '없음' 보험개수 0개로 바꾼다
 df_credit_cnt = df_credit_cnt.fillna(0)
 print(df_credit_cnt.isna().sum())
@@ -141,10 +204,8 @@ saving     0
 dtype: int64
 ```
 
+## 2.2 event time 정의
 ```python
-In [ ]:
-
-
 print(df_credit_cnt.shape)
 event_ym = 202003
 df_credit_cnt['year'] = df_credit_cnt['ym']//100
@@ -157,11 +218,79 @@ df_credit_cnt['event_time'] = df_credit_cnt['event_time_month']/3
 print(df_credit_cnt.shape)
 df_credit_cnt.head(3)
 ```
+    (10468940, 12)
+    (10468940, 12)
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>join_sn</th>
+      <th>hl</th>
+      <th>ym</th>
+      <th>all</th>
+      <th>life</th>
+      <th>disease</th>
+      <th>hurt</th>
+      <th>saving</th>
+      <th>year</th>
+      <th>month</th>
+      <th>event_time_month</th>
+      <th>event_time</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>3</td>
+      <td>0</td>
+      <td>201812</td>
+      <td>3.0</td>
+      <td>1.0</td>
+      <td>2.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>2018</td>
+      <td>12</td>
+      <td>-15</td>
+      <td>-5.0</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>8</td>
+      <td>0</td>
+      <td>201812</td>
+      <td>3.0</td>
+      <td>1.0</td>
+      <td>2.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>2018</td>
+      <td>12</td>
+      <td>-15</td>
+      <td>-5.0</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>13</td>
+      <td>0</td>
+      <td>201812</td>
+      <td>3.0</td>
+      <td>1.0</td>
+      <td>2.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>2018</td>
+      <td>12</td>
+      <td>-15</td>
+      <td>-5.0</td>
+    </tr>
+  </tbody>
+</table>
 
+    
+
+## 2.3 event time의 더미변수 생성
 ```python
-In [ ]:
-
-
 # 보유개수 
 
 df_credit_cnt_et = pd.get_dummies(df_credit_cnt, columns=['event_time'], prefix='et')
@@ -178,11 +307,109 @@ cols_to_modify = [col for col in df_credit_cnt_et.columns if col.startswith('et_
 df_credit_cnt_et.loc[df_credit_cnt_et['hl']==0, cols_to_modify] = False
 df_credit_cnt_et.head(3)
 ```
+<table>
+  <thead>
+    <tr>
+      <th>Index</th>
+      <th>join_sn</th>
+      <th>hl</th>
+      <th>ym</th>
+      <th>all</th>
+      <th>life</th>
+      <th>disease</th>
+      <th>hurt</th>
+      <th>saving</th>
+      <th>year</th>
+      <th>month</th>
+      <th>event_time_month</th>
+      <th>et_95</th>
+      <th>et_94</th>
+      <th>et_93</th>
+      <th>et_92</th>
+      <th>et_91</th>
+      <th>et_0</th>
+      <th>et_1</th>
+      <th>et_2</th>
+      <th>...</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>3</td>
+      <td>0</td>
+      <td>201812</td>
+      <td>2.0</td>
+      <td>0.0</td>
+      <td>2.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>2018</td>
+      <td>12</td>
+      <td>-15</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>8</td>
+      <td>0</td>
+      <td>201812</td>
+      <td>3.0</td>
+      <td>1.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>2018</td>
+      <td>12</td>
+      <td>-15</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>13</td>
+      <td>0</td>
+      <td>201812</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>2018</td>
+      <td>12</td>
+      <td>-15</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>...</td>
+    </tr>
+  </tbody>
+</table>
 
+
+
+보유개수 테이블로부터 보유여부 테이블 생성
 ```python
-In [ ]:
-
-
 df_credit_bin_et = df_credit_cnt_et.copy()
 # 보유여부 테이블
 df_credit_bin_et.rename(columns={'all': 'has_all', 'life': 'has_life', 'disease': 'has_disease', 'hurt': 'has_hurt', 'saving': 'has_saving'}, inplace=True)
@@ -191,11 +418,108 @@ df_credit_bin_et[cols_to_transform] = (df_credit_bin_et[cols_to_transform] > 0).
 
 df_credit_bin_et.head(3)
 ```
+<table>
+  <thead>
+    <tr>
+      <th>Index</th>
+      <th>join_sn</th>
+      <th>hl</th>
+      <th>ym</th>
+      <th>all</th>
+      <th>life</th>
+      <th>disease</th>
+      <th>hurt</th>
+      <th>saving</th>
+      <th>year</th>
+      <th>month</th>
+      <th>event_time_month</th>
+      <th>et_95</th>
+      <th>et_94</th>
+      <th>et_93</th>
+      <th>et_92</th>
+      <th>et_91</th>
+      <th>et_0</th>
+      <th>et_1</th>
+      <th>et_2</th>
+      <th>...</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>3</td>
+      <td>0</td>
+      <td>201812</td>
+      <td>1</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>2018</td>
+      <td>12</td>
+      <td>-15</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>8</td>
+      <td>0</td>
+      <td>201812</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>2018</td>
+      <td>12</td>
+      <td>-15</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>13</td>
+      <td>0</td>
+      <td>201812</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>2018</td>
+      <td>12</td>
+      <td>-15</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+      <td>...</td>
+    </tr>
+  </tbody>
+</table>
 
+
+# 3.1 보유여부의 eventstudy plot
 ```python
-In [23]:
-
-
 print(df_credit_cnt_et.shape)
 ```
 
@@ -204,9 +528,6 @@ print(df_credit_cnt_et.shape)
 ```
 
 ```python
-In [25]:
-
-
 target_cols = ['has_life', 'has_disease', 'has_hurt']
 # 베이스라인을 -1 시점으로 지정
 event_cols = [c for c in df_credit_bin_et if c.startswith('et_') and c != 'et_91']
@@ -267,66 +588,6 @@ for col in target_cols:
 ```
 
 ```
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\2186664439.py:11: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
-
-
-
-
-   variable  coefficient  standard_error    T-value       p-value  lower_ci  \
-0     et_95     0.000246        0.001098   0.224394  8.224510e-01 -0.001906   
-1     et_94     0.000783        0.000984   0.795178  4.265098e-01 -0.001147   
-2     et_93     0.000780        0.000840   0.928469  3.531643e-01 -0.000867   
-3     et_92     0.000203        0.000639   0.318278  7.502742e-01 -0.001049   
-4      et_0    -0.002087        0.000646  -3.230202  1.237030e-03 -0.003354   
-5      et_1    -0.003497        0.000857  -4.080957  4.485102e-05 -0.005176   
-6      et_2    -0.004553        0.000985  -4.622329  3.794607e-06 -0.006483   
-7      et_3    -0.006286        0.001074  -5.850194  4.910146e-09 -0.008392   
-8      et_4    -0.008305        0.001154  -7.199023  6.066259e-13 -0.010566   
-9      et_5    -0.010937        0.001237  -8.843853  0.000000e+00 -0.013360   
-10     et_6    -0.012268        0.001285  -9.548479  0.000000e+00 -0.014786   
-11     et_7    -0.013222        0.001325  -9.983000  0.000000e+00 -0.015818   
-12     et_8    -0.014025        0.001363 -10.291904  0.000000e+00 -0.016696   
-13     et_9    -0.015128        0.001397 -10.829436  0.000000e+00 -0.017866   
-14    et_10    -0.016361        0.001440 -11.360852  0.000000e+00 -0.019183   
-15    et_11    -0.019527        0.001477 -13.223906  0.000000e+00 -0.022421   
-
-    upper_ci  event_time  
-0   0.002398          -5  
-1   0.002712          -4  
-2   0.002428          -3  
-3   0.001455          -2  
-4  -0.000821           0  
-5  -0.001817           1  
-6  -0.002622           2  
-7  -0.004180           3  
-8  -0.006044           4  
-9  -0.008513           5  
-10 -0.009750           6  
-11 -0.010627           7  
-12 -0.011354           8  
-13 -0.012390           9  
-14 -0.013538          10  
-15 -0.016633          11  
-
-
-
-
-
-
-
-
-
-
-
-
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\2186664439.py:11: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
-
 
 
 
@@ -367,18 +628,9 @@ C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\2186664439.py:11: Mem
 15 -0.029521          11  
 
 
-
-
-
-
-
-
-
-
-
-
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\2186664439.py:11: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
+# 이미지 자리-------------------
+![][]
+life
 
 
 
@@ -424,18 +676,9 @@ C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\2186664439.py:11: Mem
 
 
 
-
-
-
-
-
-
-
-
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\2186664439.py:11: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
+# 이미지 자리-------------------
+![][]
+disease
 
 
 
@@ -479,63 +722,18 @@ C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\2186664439.py:11: Mem
 
 
 
+# 이미지 자리-------------------
+![][]
+hurt
 
 
 
 
 
-
-
-
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\2186664439.py:11: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
-
-
-
-
-   variable  coefficient  standard_error   T-value       p-value  lower_ci  \
-0     et_95     0.005435        0.001032  5.268078  1.378625e-07  0.003413   
-1     et_94     0.003921        0.000896  4.377499  1.200503e-05  0.002166   
-2     et_93     0.002707        0.000737  3.673730  2.390362e-04  0.001263   
-3     et_92     0.000951        0.000516  1.844289  6.514102e-02 -0.000060   
-4      et_0    -0.001381        0.000527 -2.619841  8.797087e-03 -0.002415   
-5      et_1    -0.001810        0.000701 -2.580321  9.870858e-03 -0.003184   
-6      et_2    -0.002095        0.000824 -2.542121  1.101820e-02 -0.003710   
-7      et_3    -0.001079        0.000910 -1.184901  2.360566e-01 -0.002863   
-8      et_4    -0.001021        0.000998 -1.023403  3.061176e-01 -0.002978   
-9      et_5    -0.004137        0.001065 -3.885978  1.019192e-04 -0.006224   
-10     et_6    -0.002779        0.001114 -2.494663  1.260769e-02 -0.004962   
-11     et_7    -0.000704        0.001155 -0.609406  5.422553e-01 -0.002967   
-12     et_8     0.000264        0.001191  0.221920  8.243762e-01 -0.002071   
-13     et_9     0.002203        0.001234  1.785324  7.420886e-02 -0.000215   
-14    et_10     0.002625        0.001321  1.986424  4.698634e-02  0.000035   
-15    et_11     0.002578        0.001357  1.900697  5.734176e-02 -0.000080   
-
-    upper_ci  event_time  
-0   0.007457          -5  
-1   0.005677          -4  
-2   0.004151          -3  
-3   0.001962          -2  
-4  -0.000348           0  
-5  -0.000435           1  
-6  -0.000480           2  
-7   0.000706           3  
-8   0.000935           4  
-9  -0.002051           5  
-10 -0.000596           6  
-11  0.001560           7  
-12  0.002599           8  
-13  0.004621           9  
-14  0.005215          10  
-15  0.005237          11
 ```
 
+# 3.2 보유개수의 eventstudy plot 
 ```python
-In [24]:
-
-
 target_cols = ['life', 'disease', 'hurt']
 # 베이스라인을 -1 시점으로 지정
 event_cols = [c for c in df_credit_cnt_et if c.startswith('et_') and c != 'et_91']
@@ -609,70 +807,6 @@ for col in target_cols:
 ```
 
 ```
-C:\ProgramData\Anaconda3\envs\[test_env]\Lib\site-packages\linearmodels\panel\model.py:1260: MissingValueWarning: 
-Inputs contain missing values. Dropping rows with missing observations.
-  super().__init__(dependent, exog, weights=weights, check_rank=check_rank)
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\798591153.py:14: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
-
-
-
-
-   variable  coefficient  standard_error    T-value       p-value  lower_ci  \
-0     et_95    -0.002427        0.006751  -0.359422  7.192793e-01 -0.015658   
-1     et_94    -0.007687        0.005923  -1.297653  1.944068e-01 -0.019296   
-2     et_93    -0.000825        0.004941  -0.166886  8.674600e-01 -0.010508   
-3     et_92     0.004437        0.003582   1.238467  2.155431e-01 -0.002585   
-4      et_0    -0.025781        0.003583  -7.195676  6.215028e-13 -0.032803   
-5      et_1    -0.033162        0.004999  -6.633549  3.277290e-11 -0.042961   
-6      et_2    -0.041514        0.006021  -6.894768  5.395684e-12 -0.053316   
-7      et_3    -0.057614        0.006823  -8.444581  0.000000e+00 -0.070985   
-8      et_4    -0.083937        0.007531 -11.145845  0.000000e+00 -0.098697   
-9      et_5    -0.180175        0.008171 -22.050593  0.000000e+00 -0.196190   
-10     et_6    -0.201550        0.008658 -23.280136  0.000000e+00 -0.218519   
-11     et_7    -0.181972        0.009051 -20.106067  0.000000e+00 -0.199710   
-12     et_8    -0.207508        0.009397 -22.083138  0.000000e+00 -0.225925   
-13     et_9    -0.218804        0.009758 -22.422903  0.000000e+00 -0.237930   
-14    et_10    -0.235263        0.010178 -23.113971  0.000000e+00 -0.255212   
-15    et_11    -0.265674        0.010516 -25.263349  0.000000e+00 -0.286285   
-
-    upper_ci  event_time  
-0   0.010805          -5  
-1   0.003923          -4  
-2   0.008859          -3  
-3   0.011458          -2  
-4  -0.018759           0  
-5  -0.023364           1  
-6  -0.029713           2  
-7  -0.044242           3  
-8  -0.069177           4  
-9  -0.164160           5  
-10 -0.184581           6  
-11 -0.164233           7  
-12 -0.189091           8  
-13 -0.199679           9  
-14 -0.215314          10  
-15 -0.245062          11  
-
-
-
-
-
-
-
-
-
-
-
-
-C:\ProgramData\Anaconda3\envs\[test_env]\Lib\site-packages\linearmodels\panel\model.py:1260: MissingValueWarning: 
-Inputs contain missing values. Dropping rows with missing observations.
-  super().__init__(dependent, exog, weights=weights, check_rank=check_rank)
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\798591153.py:14: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
 
 
 
@@ -716,22 +850,9 @@ C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\798591153.py:14: Memo
 
 
 
-
-
-
-
-
-
-
-
-
-C:\ProgramData\Anaconda3\envs\[test_env]\Lib\site-packages\linearmodels\panel\model.py:1260: MissingValueWarning: 
-Inputs contain missing values. Dropping rows with missing observations.
-  super().__init__(dependent, exog, weights=weights, check_rank=check_rank)
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\798591153.py:14: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
+# 이미지 자리-------------------
+![][]
+life insurance
 
 
 
@@ -778,18 +899,9 @@ C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\798591153.py:14: Memo
 
 
 
-
-
-
-
-
-C:\ProgramData\Anaconda3\envs\[test_env]\Lib\site-packages\linearmodels\panel\model.py:1260: MissingValueWarning: 
-Inputs contain missing values. Dropping rows with missing observations.
-  super().__init__(dependent, exog, weights=weights, check_rank=check_rank)
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\798591153.py:14: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
+# 이미지 자리-------------------
+![][]
+disease insurance
 
 
 
@@ -833,98 +945,14 @@ C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\798591153.py:14: Memo
 
 
 
+# 이미지 자리-------------------
+![][]
+
+hurt insurance
 
 
 
-
-
-
-
-
-C:\ProgramData\Anaconda3\envs\[test_env]\Lib\site-packages\linearmodels\panel\model.py:1260: MissingValueWarning: 
-Inputs contain missing values. Dropping rows with missing observations.
-  super().__init__(dependent, exog, weights=weights, check_rank=check_rank)
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12608\798591153.py:14: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
-
-
-
-
-   variable  coefficient  standard_error   T-value       p-value  lower_ci  \
-0     et_95     0.003359        0.001456  2.306610  2.107659e-02  0.000505   
-1     et_94     0.002263        0.001243  1.821086  6.859380e-02 -0.000173   
-2     et_93     0.001516        0.001010  1.501440  1.332418e-01 -0.000463   
-3     et_92     0.000547        0.000713  0.767069  4.430405e-01 -0.000850   
-4      et_0    -0.000467        0.000686 -0.680406  4.962476e-01 -0.001812   
-5      et_1    -0.000477        0.000930 -0.513339  6.077142e-01 -0.002299   
-6      et_2     0.000530        0.001118  0.473841  6.356133e-01 -0.001662   
-7      et_3     0.003178        0.001252  2.537590  1.116189e-02  0.000723   
-8      et_4     0.003975        0.001382  2.876708  4.018483e-03  0.001267   
-9      et_5    -0.002202        0.001488 -1.479701  1.389532e-01 -0.005120   
-10     et_6     0.000827        0.001554  0.531936  5.947706e-01 -0.002219   
-11     et_7     0.004917        0.001618  3.038748  2.375637e-03  0.001746   
-12     et_8     0.007177        0.001676  4.281300  1.858063e-05  0.003892   
-13     et_9     0.010886        0.001744  6.243708  4.273359e-10  0.007469   
-14    et_10     0.009392        0.001893  4.961022  7.012439e-07  0.005681   
-15    et_11     0.009628        0.001929  4.990573  6.020140e-07  0.005847   
-
-    upper_ci  event_time  
-0   0.006213          -5  
-1   0.004699          -4  
-2   0.003496          -3  
-3   0.001944          -2  
-4   0.000878           0  
-5   0.001345           1  
-6   0.002721           2  
-7   0.005633           3  
-8   0.006684           4  
-9   0.000715           5  
-10  0.003873           6  
-11  0.008089           7  
-12  0.010463           8  
-13  0.014304           9  
-14  0.013102          10  
-15  0.013409          11
 ```
 
-```python
-In [ ]:
-```
-
-```python
-In [ ]:
-```
-
-```python
-In [ ]:
-```
-
-```python
-In [ ]:
-```
-
-```python
-In [ ]:
-```
-
-## 1. did template 가져오기¶
-
-## 2. 전처리¶
-
-### 2.1 보유여부, 보유개수 테이블 만들기¶
-
-### 2.2 event time 정의¶
-
-### 2.3 event time의 dummy 변수 생성¶
-
-보유개수 테이블로부터 보유여부 테이블 생성
 
 
-## 3.1 보유여부 회귀¶
-
-한번에 그리기
-
-
-## 3.2 보유개수 회귀¶
