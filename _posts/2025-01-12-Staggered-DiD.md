@@ -1,15 +1,12 @@
 ---
 layout: single
-title: ""
+title: "Staggered DiD"
 categories: Causal Inference
 sidebar: true
 use_math: true
 ---
 
 ```python
-In [1]:
-
-
 import pandas as pd 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,71 +16,61 @@ import re
 from linearmodels.panel import PanelOLS
 pd.set_option('display.max_column', None)
 ```
-
+# 1. 신용도 변화 테이블 확인
 ```python
-In [4]:
-
-
 df = pd.read_csv('../250111_df_credit_low.csv', index_col=0)
 ```
 
 ```python
-In [6]:
-
-
 df.iloc[:, 1:].head(3)
 ```
 
-```
-Out[6]:
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>ym</th>
+      <th>spread_score</th>
+      <th>exp_default</th>
+      <th>future_default</th>
+      <th>y_pred_sm</th>
+      <th>credit_low</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>201906</td>
+      <td>0.627814</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.488615</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>201906</td>
+      <td>0.633201</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.492191</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>201906</td>
+      <td>0.651423</td>
+      <td>1.0</td>
+      <td>1.0</td>
+      <td>0.984594</td>
+      <td>0.0</td>
+    </tr>
+  </tbody>
+</table>
 
 
-
-
-
-
-
-ym
-spread_score
-exp_default
-future_default
-y_pred_sm
-credit_low
-
-
-
-
-0
-201906
-0.627814
-0.0
-0.0
-0.488615
-0.0
-
-
-1
-201906
-0.633201
-0.0
-0.0
-0.492191
-0.0
-
-
-2
-201906
-0.651423
-1.0
-1.0
-0.984594
-0.0
-```
-
+신용도 하락 시점의 분포를 확인한다
 ```python
-In [7]:
-
-
 df_min_ym = df[df['credit_low']==1].groupby('join_sn').min('ym')
 print(df_min_ym.shape)
 ```
@@ -93,32 +80,23 @@ print(df_min_ym.shape)
 ```
 
 ```python
-In [9]:
-
-
 df_min_ym.columns
 ```
 
 ```
-Out[9]:
-
 Index(['ym', 'spread_score', 'exp_default', 'future_default', 'y_pred_sm',
        'credit_low'],
       dtype='object')
 ```
 
+
 ```python
-In [6]:
-
-
 df_min_ym['ym'].value_counts()
 # 총 15개 시점
 # 201906부터 있음
 ```
 
 ```
-Out[6]:
-
 ym
 201912    5598
 201909    5297
@@ -139,30 +117,21 @@ Name: count, dtype: int64
 ```
 
 ```python
-In [7]:
-
-
 len_yms = len(df_min_ym['ym'].unique())
 pd.to_datetime(df_min_ym['ym'], format='%Y%m').hist(bins=len_yms)
 ```
 
-```
-Out[7]:
+이미지 자리
+![](/images/capstonePRJ/staggered_did/ym_hist.png)
 
-<Axes: >
-```
 
+# 2. 전처리
+## 2.1 보유여부, 보유개수 테이블 만들기
 ```python
-In [12]:
-
-
 df_cnt_pre = pd.read_csv('../../INSURANCE_CNT_CONTRACT_I_VER3.csv')
 ```
 
 ```python
-In [13]:
-
-
 # 생명보험(종신+정기)
 df_cnt_pre['life'] = df_cnt_pre['i_cnt_whole']+df_cnt_pre['i_cnt_term']
 # 건강보험(질병+암)
@@ -173,202 +142,103 @@ df_cnt_pre['saving'] = df_cnt_pre['i_cnt_pen_sv'] + df_cnt_pre['i_cnt_pen'] + df
 df_cnt_pre.iloc[:, 1:].head(3)
 ```
 
-```
-Out[13]:
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>ym</th>
+      <th>i_cnt_all</th>
+      <th>...</th>
+      <th>life</th>
+      <th>disease</th>
+      <th>saving</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>201803</td>
+      <td>7</td>
+      <td>...</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>201806</td>
+      <td>7</td>
+      <td>...</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>201809</td>
+      <td>6</td>
+      <td>...</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
 
-
-
-
-
-
-
-ym
-i_cnt_all
-i_cnt_whole
-i_cnt_term
-i_cnt_disease
-i_cnt_health
-i_cnt_cancer
-i_cnt_nursing
-i_cnt_child
-i_cnt_dent
-i_cnt_pen_sv
-i_cnt_pen
-i_cnt_sv
-i_cnt_ed
-i_cnt_drive
-i_cnt_tour
-i_cnt_golf
-i_cnt_med
-i_cnt_car
-i_cnt_fire
-i_cnt_liability
-i_cnt_fire_2
-i_cnt_else
-life
-disease
-saving
-
-
-
-
-0
-201803
-7
-0
-0
-0
-2
-1
-1
-0
-0
-0
-0
-1
-0
-1
-0
-0
-0
-0
-0
-0
-0
-1
-0
-1
-1
-
-
-1
-201806
-7
-0
-0
-0
-2
-1
-1
-0
-0
-0
-0
-1
-0
-1
-0
-0
-0
-0
-0
-0
-0
-1
-0
-1
-1
-
-
-2
-201809
-6
-0
-0
-0
-2
-1
-0
-0
-0
-0
-0
-1
-0
-1
-0
-0
-0
-0
-0
-0
-0
-1
-0
-1
-1
-```
 
 ```python
-In [14]:
-
-
 target_cols = ['join_sn', 'ym', 'i_cnt_all','life', 'disease', 'i_cnt_health', 'saving']
 df_cnt = df_cnt_pre[target_cols]
 df_cnt.rename(columns={'i_cnt_all': 'all', 'i_cnt_health': 'hurt'}, inplace=True)
 # 보유개수 테이블
 df_cnt.iloc[:, 1:].head(3)
 ```
-
-```
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_12396\2391192271.py:3: SettingWithCopyWarning: 
-A value is trying to be set on a copy of a slice from a DataFrame
-
-See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
-  df_cnt.rename(columns={'i_cnt_all': 'all', 'i_cnt_health': 'hurt'}, inplace=True)
-
-
-
-
-Out[14]:
-
-
-
-
-
-
-
-ym
-all
-life
-disease
-hurt
-saving
-
-
-
-
-0
-201803
-7
-0
-1
-2
-1
-
-
-1
-201806
-7
-0
-1
-2
-1
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>ym</th>
+      <th>all</th>
+      <th>life</th>
+      <th>disease</th>
+      <th>hurt</th>
+      <th>saving</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>201803</td>
+      <td>7</td>
+      <td>0</td>
+      <td>1</td>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>201806</td>
+      <td>7</td>
+      <td>0</td>
+      <td>1</td>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>201809</td>
+      <td>6</td>
+      <td>0</td>
+      <td>1</td>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
 
 
-2
-201809
-6
-0
-1
-2
-1
-```
-
+## 2.2 신용도 변화 테이블과 조인하기
 ```python
-In [15]:
-
-
 df_credit_cnt = df.merge(df_cnt, how='left', on=['join_sn', 'ym'])
 
 print("보유개수 df_credit_cnt 테이블", df_credit_cnt.shape)
@@ -383,9 +253,6 @@ Index(['join_sn', 'ym', 'spread_score', 'exp_default', 'future_default',
 ```
 
 ```python
-In [16]:
-
-
 # 대출은 있으나 보험이 하나도 없는 차주-시점 확인하기
 # print(df_credit_bin.isna().sum())
 # print(df_credit_cnt.isna().sum())
@@ -412,9 +279,6 @@ dtype: int64
 ```
 
 ```python
-In [17]:
-
-
 # 보유여부 테이블
 df_credit_bin = df_credit_cnt.copy()
 df_credit_bin.rename(columns = {'all': 'has_all', 'life': 'has_life', 'disease': 'has_disease', 'hurt': 'has_hurt', 'saving': 'has_saving'}, inplace=True)
@@ -424,156 +288,75 @@ df_credit_bin[cols_to_transform] = (df_credit_bin[cols_to_transform] > 0).astype
 
 df_credit_bin.iloc[:, 1:].head(3)
 ```
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>ym</th>
+      <th>spread_score</th>
+      <th>exp_default</th>
+      <th>future_default</th>
+      <th>y_pred_sm</th>
+      <th>credit_low</th>
+      <th>has_all</th>
+      <th>has_life</th>
+      <th>has_disease</th>
+      <th>has_hurt</th>
+      <th>has_saving</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>201906</td>
+      <td>0.627814</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.488615</td>
+      <td>0.0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>201906</td>
+      <td>0.633201</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.492191</td>
+      <td>0.0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>201906</td>
+      <td>0.651423</td>
+      <td>1.0</td>
+      <td>1.0</td>
+      <td>0.984594</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
 
-```
-Out[17]:
 
 
+# 3.1 보유여부 staggered DiD
 
-
-
-
-
-ym
-spread_score
-exp_default
-future_default
-y_pred_sm
-credit_low
-has_all
-has_life
-has_disease
-has_hurt
-has_saving
-
-
-
-
-0
-201906
-0.627814
-0.0
-0.0
-0.488615
-0.0
-1
-0
-1
-0
-0
-
-
-1
-201906
-0.633201
-0.0
-0.0
-0.492191
-0.0
-1
-1
-1
-1
-1
-
-
-2
-201906
-0.651423
-1.0
-1.0
-0.984594
-0.0
-0
-0
-0
-0
-0
-```
 
 ```python
-In [18]:
-
-
-print(df_credit_bin.shape)
-df_credit_bin.iloc[:, 1:].head(3)
-```
-
-```
-(14540106, 12)
-
-
-
-
-Out[18]:
-
-
-
-
-
-
-
-ym
-spread_score
-exp_default
-future_default
-y_pred_sm
-credit_low
-has_all
-has_life
-has_disease
-has_hurt
-has_saving
-
-
-
-
-0
-201906
-0.627814
-0.0
-0.0
-0.488615
-0.0
-1
-0
-1
-0
-0
-
-
-1
-201906
-0.633201
-0.0
-0.0
-0.492191
-0.0
-1
-1
-1
-1
-1
-
-
-2
-201906
-0.651423
-1.0
-1.0
-0.984594
-0.0
-0
-0
-0
-0
-0
-```
-
-```python
-In [19]:
-
-
 target_cols = ['has_all', 'has_life', 'has_disease', 'has_hurt', 'has_saving']
 
 df_credit_bin_temp = df_credit_bin.set_index(['join_sn', 'ym']) # Entity FE, Time FE를 위해 인덱스 지정 
@@ -588,13 +371,6 @@ for col in target_cols:
 ```
 
 ```
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_15152\1501776881.py:9: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
-
-
-
 
                           PanelOLS Estimation Summary                           
 ================================================================================
@@ -627,14 +403,6 @@ P-value: 0.0000
 Distribution: F(1204346,13335758)
 
 Included effects: Entity, Time
-
-
-
-
-
-
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_15152\1501776881.py:9: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
 
 
 
@@ -678,14 +446,6 @@ Included effects: Entity, Time
 
 
 
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_15152\1501776881.py:9: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
-
-
-
-
                           PanelOLS Estimation Summary                           
 ================================================================================
 Dep. Variable:            has_disease   R-squared:                        0.0003
@@ -717,14 +477,6 @@ P-value: 0.0000
 Distribution: F(1204346,13335758)
 
 Included effects: Entity, Time
-
-
-
-
-
-
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_15152\1501776881.py:9: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
 
 
 
@@ -768,14 +520,6 @@ Included effects: Entity, Time
 
 
 
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_15152\1501776881.py:9: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
-
-
-
-
                           PanelOLS Estimation Summary                           
 ================================================================================
 Dep. Variable:             has_saving   R-squared:                     9.229e-06
@@ -809,10 +553,11 @@ Distribution: F(1204346,13335758)
 Included effects: Entity, Time
 ```
 
+
+
+
+# 3.2 보유개수 Staggered DiD
 ```python
-In [20]:
-
-
 target_cols = ['all', 'life', 'disease', 'hurt', 'saving']
 
 df_credit_cnt_temp = df_credit_cnt.set_index(['join_sn', 'ym']) # Entity FE, Time FE를 위해 인덱스 지정 
@@ -830,14 +575,6 @@ for col in target_cols:
 ```
 
 ```
-C:\ProgramData\Anaconda3\envs\[test_env]\Lib\site-packages\linearmodels\panel\model.py:1260: MissingValueWarning: 
-Inputs contain missing values. Dropping rows with missing observations.
-  super().__init__(dependent, exog, weights=weights, check_rank=check_rank)
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_15152\1150652700.py:12: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
-
 
 
 
@@ -874,15 +611,6 @@ Distribution: F(1199633,13203115)
 Included effects: Entity, Time
 
 
-
-
-
-
-C:\ProgramData\Anaconda3\envs\[test_env]\Lib\site-packages\linearmodels\panel\model.py:1260: MissingValueWarning: 
-Inputs contain missing values. Dropping rows with missing observations.
-  super().__init__(dependent, exog, weights=weights, check_rank=check_rank)
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_15152\1150652700.py:12: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
 
 
 
@@ -926,13 +654,6 @@ Included effects: Entity, Time
 
 
 
-C:\ProgramData\Anaconda3\envs\[test_env]\Lib\site-packages\linearmodels\panel\model.py:1260: MissingValueWarning: 
-Inputs contain missing values. Dropping rows with missing observations.
-  super().__init__(dependent, exog, weights=weights, check_rank=check_rank)
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_15152\1150652700.py:12: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
 
 
 
@@ -971,14 +692,6 @@ Included effects: Entity, Time
 
 
 
-
-
-
-C:\ProgramData\Anaconda3\envs\[test_env]\Lib\site-packages\linearmodels\panel\model.py:1260: MissingValueWarning: 
-Inputs contain missing values. Dropping rows with missing observations.
-  super().__init__(dependent, exog, weights=weights, check_rank=check_rank)
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_15152\1150652700.py:12: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
 
 
 
@@ -1022,17 +735,6 @@ Included effects: Entity, Time
 
 
 
-C:\ProgramData\Anaconda3\envs\[test_env]\Lib\site-packages\linearmodels\panel\model.py:1260: MissingValueWarning: 
-Inputs contain missing values. Dropping rows with missing observations.
-  super().__init__(dependent, exog, weights=weights, check_rank=check_rank)
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_15152\1150652700.py:12: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
-
-
-
-
                           PanelOLS Estimation Summary                           
 ================================================================================
 Dep. Variable:                 saving   R-squared:                     1.359e-06
@@ -1066,10 +768,11 @@ Distribution: F(1197031,13199881)
 Included effects: Entity, Time
 ```
 
+
+
+
+### 이상치 처리 방식이 truncate가 아닌 cap인 경우
 ```python
-In [15]:
-
-
 target_cols = ['life', 'disease', 'hurt']
 
 df_credit_cnt_temp = df_credit_cnt.set_index(['join_sn', 'ym']) # Entity FE, Time FE를 위해 인덱스 지정 
@@ -1087,11 +790,6 @@ for col in target_cols:
 ```
 
 ```
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_8596\962263856.py:12: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
-
 
 
 
@@ -1129,11 +827,6 @@ Included effects: Entity, Time
 
 
 
-
-
-
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_8596\962263856.py:12: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
 
 
 
@@ -1177,12 +870,6 @@ Included effects: Entity, Time
 
 
 
-C:\Users\ailp-heebum071\AppData\Local\Temp\ipykernel_8596\962263856.py:12: MemoryWarning: Using low-memory algorithm to estimate two-way model. Explicitly set low_memory=True to silence this message.  Set low_memory=False to use the standard algorithm that creates dummy variables for the smaller of the number of entities or number of time periods.
-  result = model.fit(cov_type='clustered', cluster_entity=True)
-
-
-
-
 
 
                           PanelOLS Estimation Summary                           
@@ -1218,37 +905,4 @@ Distribution: F(1204346,13335758)
 Included effects: Entity, Time
 ```
 
-```python
-In [ ]:
-```
 
-```python
-In [ ]:
-```
-
-```python
-In [ ]:
-```
-
-```python
-In [ ]:
-```
-
-## 1. 신용도 변화 테이블 확인¶
-
-### 신용도 하락 시점의 분포를 확인한다¶
-
-## 2. 전처리¶
-
-### 2.1 보유여부, 보유개수 테이블 만들기¶
-
-### 2.2 신용도 변화 테이블과 조인하기¶
-
-## 3.1 보유여부 회귀¶
-
-한번에 그리기
-
-
-## 3.2 보유개수 회귀¶
-
-아래: 이상치 처리 방식을 cap으로 채택한 경우
